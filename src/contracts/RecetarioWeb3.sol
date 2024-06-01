@@ -2,60 +2,95 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract PropiedadAutomotor is  ERC721URIStorage, Ownable {
+contract RecetarioWeb3 is ERC721 {
     using Counters for Counters.Counter;
-    Counters.Counter private _AutoIds;
-    
-    mapping(uint => address) public dniToWallet; 
-    mapping(address => uint) public dnideWallet; 
-    mapping (uint  => uint) public propietarioAuto;
-    mapping(address => bool) public billeteraRegistrada; 
+    Counters.Counter private _Recetas;
 
-
-    constructor() ERC721("AutoToken", "AUTO") {}
-
-    function safeMint(uint dni, string memory uri) public returns (uint256) {
-        require(dniToWallet[dni]!=address(0) && dniToWallet[dni]==msg.sender,"problemas con la autentificacion del dni");
-        _AutoIds.increment();
-        uint256 autoId = _AutoIds.current();
-        _safeMint(msg.sender, autoId);
-        _setTokenURI(autoId, uri);
-        propietarioAuto[autoId]=dni;
-        return autoId;
+    constructor() ERC721("Recetario", "RECETA") {
+    _Recetas.increment();
     }
 
-    function _transferFrom(address to, uint256 _autoID, uint dni) public {
-        require(billeteraRegistrada[to]==true,"la billetera no esta registrada");
-        require(dniToWallet[dni]!=msg.sender);
-        require(dniToWallet[dni]==to,"la billetera destino no esta registrada con el dni correspondiente");
-        require(dniToWallet[dni]!=address(0),"problemas con la autentificacion del dni");
-        super.transferFrom(msg.sender, to, _autoID);
-        propietarioAuto[_autoID]=dni;
+    struct Receta {
+        uint256 idReceta;
+        string medicamento;
+        address doctor;
+        bytes32 hashDIDPaciente;
+        string fechaCreacion;
+        bool dispensada;
+        bytes32 recetaCV;
     }
 
-     function _burn(uint256 _autoID)  internal override {
-      super._burn(_autoID);
-        delete propietarioAuto[_autoID];
+    mapping(bytes32 => mapping(address => string)) private CredencialesCifradas;
+    mapping(uint256 => Receta) public recetas;
+
+    function cifrarUri(string memory url) internal returns (bytes32) {
+        bytes32 uriHash = sha256(abi.encodePacked(url));
+        CredencialesCifradas[uriHash][msg.sender] = url;
+        return uriHash;
     }
 
-    function quemarNFT(uint256 _autoId) public onlyOwner {
-        _burn(_autoId);
+    function obtenerUri(bytes32 urlHash) public view returns (string memory) {
+        return CredencialesCifradas[urlHash][msg.sender];
     }
 
+    function generarRecetaCV(
+        string memory medicamento,
+        address doctor,
+        string memory did,
+        string memory fechaActual,
+        bool dispensada,
+        string memory uri
+    ) public returns (uint256) {
+        uint256 idReceta = _Recetas.current();
+        _safeMint(msg.sender, idReceta);
+        _Recetas.increment();
 
-    function registrardni(uint dni) public {
-        require(dniToWallet[dni] == address(0), "Este DNI ya esta registrado.");
-        require(!billeteraRegistrada[msg.sender], "esta billetera ya esta registrada");
-        dniToWallet[dni] = msg.sender;
-        dnideWallet[msg.sender] = dni;
-        billeteraRegistrada[msg.sender]=true;
+
+        bytes32 hashDIDPaciente = sha256(abi.encodePacked(did));
+        bytes32 recetaCV= cifrarUri(uri);
+
+        recetas[idReceta] = Receta({
+            idReceta: idReceta,
+            medicamento: medicamento,
+            doctor: doctor,
+            hashDIDPaciente: hashDIDPaciente,
+            fechaCreacion: fechaActual,
+            dispensada: dispensada,
+            recetaCV: recetaCV
+        });
+
+        return idReceta;
     }
 
-    function transferFrom(address from, address to, uint256 _autoID) public pure override(ERC721) {
-    revert("usar funcion del contrato");
-}
+    function burn(uint256 _recetaId) public {
+        _burn(_recetaId);
+        delete recetas[_recetaId];
+    }
+
+    function getReceta(uint256 recetaId) public view returns (
+        uint256 id,
+        string memory medicamento,
+        address doctor,
+        bytes32 hashDIDPaciente,
+        string memory fechaCreacion,
+        bool dispensada,
+        bytes32 recetaCV
+    ) {
+        Receta memory respuesta = recetas[recetaId];
+        return (
+            respuesta.idReceta,
+            respuesta.medicamento,
+            respuesta.doctor,
+            respuesta.hashDIDPaciente,
+            respuesta.fechaCreacion,
+            respuesta.dispensada,
+            respuesta.recetaCV
+        );
+    }
+
+    function dispensarReceta(uint256 recetaId) public {
+        recetas[recetaId].dispensada = true;
+    }
 }

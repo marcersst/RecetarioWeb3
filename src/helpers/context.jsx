@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { ethers } from 'ethers';
 import Swal from 'sweetalert2';
 import abi from './abi.json';
