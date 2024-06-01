@@ -1,6 +1,10 @@
 # Resumen del Proyecto
 
-La DApp "Recetario Web3" permite a los usuarios crear recetas médicas en el formato W3C. En esta instancia, el contrato inteligente asociado al proyecto proporciona todas las funciones necesarias como públicas para que los usuarios puedan probar las distintas funcionalidades.
+Contrato desplegado en la red de  zksync Sepolia Testnet.
+
+link de la dapp: https://main.d3175wwe2xt4iw.amplifyapp.com/registro
+
+El  contrato permite a los usuarios crear recetas médicas en el formato W3C. En esta instancia, el contrato inteligente asociado al proyecto proporciona todas las funciones necesarias como públicas para que los usuarios puedan probar las distintas funcionalidades.
 
 ## Funcionamiento
 
